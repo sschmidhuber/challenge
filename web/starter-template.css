@@ -1,0 +1,20 @@
+body {
+  padding-top: 5rem;
+}
+.starter-template {
+  padding: 3rem 1.5rem;
+  text-align: center;
+}
+
+#container-statistics, #container-about {
+    display: none;
+}
+
+.nav-link:focus {
+  outline: 0;
+}
+
+.icons img {
+    height: 5em;
+    margin: 1em;
+}
