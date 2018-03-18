@@ -1,69 +1,69 @@
-# model
+# data model
 
 Challenge <- R6Class(
-  classname = "Challenge",
+  "Challenge",
   public = list(
-    initialize = function(category = "mathematic"){
-      self$category <- "mathematic"
-      switch(self$category,
-             mathematic = {
-               self$content <- list(question = "1 + 2 =", solution = 3)
-             },
-             stop("invalid category"))
-    },
-    category = NULL,
-    content = NULL,
-    fuzzyAllowed = FALSE,
     getQuestion = function() {
-      self$content[["question"]]
+      private$question
     },
-    answer = function(answer) {
-      self$content[["answer"]] <- answer
+    setAnswer = function(answer) {
+      private$answer <- tolower(answer)
       invisible(self)
     },
-    check = function() {
-      answer <- self$content[["answer"]]
-      solution <- self$content[["solution"]]
-      if (self$fuzzyAllowed) {
-        correct <- amatch(tolower(answer), tolower(solution)) == 1
+    checkAnswer = function() {
+      if (private$fuzzyAllowed) {
+        correct <- amatch(private$answer, private$solution) == 1
       } else {
-        correct <- answer == solution
+        correct <- private$answer == private$solution
       }
-      return(list(correct = correct, solution = solution))
+      return(list(correct = correct, solution = private$solution))
     },
     toJSON = function() {
       jsonlite::toJSON(list(category=self$category, question=self$content[["question"]]), auto_unbox = TRUE)
+    }
+  ),
+  private = list(
+    question = NULL,
+    solution = NULL,
+    answer = "",
+    fuzzyAllowed = FALSE
+  )
+)
+
+MathChallenge <- R6Class(
+  "MathChallenge",
+  inherit = Challenge,
+  public = list(
+    initialize = function() {
+      private$question <- "1 + 2 ="
+      private$solution <- 3
     }
   )
 )
 
 Game <- R6Class(
-  classname = "Game",
-  list(
+  "Game",
+  public = list(
     initialize = function(duration = 30) {
       self$id <- UUIDgenerate()
-      self$startTime <- as.integer(format(Sys.time(), "%s"))
-      self$duration <- duration
+      self$createNextChallenge()
+      private$startTime <- as.integer(format(Sys.time(), "%s"))
+      private$duration <- duration
     },
     id = NULL,
-    startTime = NULL,
-    duration = NULL,
-    challenges = list(),
-    getNextChallenge = function() {
-      self$challenges <- append(self$challenges, Challenge$new())
-      return(self$challenges[[length(self$challenges)]])
+    createNextChallenge = function() {
+      private$challenges <- append(private$challenges, MathChallenge$new())
+      invisible(self)
+    },
+    getChallenge = function() {
+      return(private$challenges[[length(private$challenges)]])
     },
     getTime = function() {
-      return(self$duration - (as.integer(format(Sys.time(), "%s")) - self$startTime))
+      return(private$duration - (as.integer(format(Sys.time(), "%s")) - private$startTime))
     },
     getScore = function() {
-      score <- 0
-      for (challenge in self$challenges) {
-        if (challenge$check()[["correct"]]) {
-          score <- score + 1
-        }
-      }
-      return(score)
+      correct <- unlist(sapply(private$challenges, function(x) {x$checkAnswer()}))
+      return(sum(correct[correct==TRUE]))
     },
     toJSON = function() {
       jsonlite::toJSON(list(id = self$id,
@@ -71,5 +71,10 @@ Game <- R6Class(
                             duration = self$duration,
                             score =self$score),auto_unbox = TRUE)
     }
+  ),
+  private = list(
+    challenges = list(),
+    startTime = NULL,
+    duration = NULL
   )
 )
