@@ -35,8 +35,10 @@ MathChallenge <- R6Class(
   inherit = Challenge,
   public = list(
     initialize = function() {
-      private$question <- "1 + 2 ="
-      private$solution <- 3
+      operands <- sample(20, size = 2, replace = TRUE)
+      operator <- sample(c("+", "-"), size = 1)
+      private$question <- paste(operands[1], operator, operands[2], "=")
+      private$solution <- eval(parse(text = paste0(operands[1], operator, operands[2])))
     }
   )
 )
