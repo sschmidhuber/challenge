@@ -7,6 +7,10 @@
 
 ## global code; executed at plumb time
 
+source("r/model.R")
+
+TEST_MODE <- TRUE
+
 # holds details about players
 playerTable <- data.frame(
   id=character(),
@@ -40,9 +44,11 @@ gameList <- list()
 # log some information about incoming requests
 #* @filter logger
 function(req){
+  str(req$QUERY_STRING)
+  query <- "" #str_remove(str_replace_all(req$QUERY_STRING, "&", " "), "\\?")
   cat(as.character(Sys.time()), "-", 
       req$REQUEST_METHOD, req$PATH_INFO, "-", 
-      req$HTTP_USER_AGENT, "@", req$REMOTE_ADDR, "\n")
+      query, "@", req$REMOTE_ADDR, "\n")
   plumber::forward()
 }
 
@@ -55,10 +61,9 @@ function(req){
 function(res, name, country="unknown", password) {
   name <- str_squish(name)
   if (str_length(name) < 2 || str_length(password) <= 3) {
-    cat("\nname:", name, "passowrd:", password, "\n\n")
     res$status <- 400
     list(error = "name or password invalid")
-  } else if (nrow(playerTable[playerTable$name==name,])==1) {
+  } else if (nrow(playerTable[tolower(playerTable$name) == tolower(name),])==1) {
     res$status <- 400
     list(error = "name already assigned to another player")
   } else {
@@ -90,8 +95,17 @@ function(res, name, password) {
   }
 }
 
-# trigger a new game
-#* @get /new
-#function(){
-#  
-#}
+# start a new game
+#* @get /newGame/<id>
+#* @serializer unboxedJSON
+function(id){
+  print(id)
+  if (playerTable[playerTable$id==id,]==0) {
+    res$status <- 400
+    list(error = paste0("invalid player id: '", id, "'"))
+  } else {
+    newGame <- Game$new(mode = ifelse(TEST_MODE, "test", "default"))
+    gameList <- append(gameList, list(id = newGame))
+    list(question = newGame$getChallenge()$getQuestion())
+  }
+}

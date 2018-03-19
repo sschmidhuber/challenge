@@ -43,18 +43,34 @@ MathChallenge <- R6Class(
   )
 )
 
+# this class is ment for testing purposes
+TestChallenge <- R6Class(
+  "TestChallenge",
+  inherit = Challenge,
+  public = list(
+    initialize = function() {
+      private$question <- "1 + 1 ="
+      private$solution <- 2
+    }
+  )
+)
+
 Game <- R6Class(
   "Game",
   public = list(
-    initialize = function(duration = 30) {
-      self$id <- UUIDgenerate()
-      self$createNextChallenge()
+    initialize = function(mode = "default", duration = 30) {
+      private$mode <- mode
       private$startTime <- as.integer(format(Sys.time(), "%s"))
       private$duration <- duration
+      self$createNextChallenge()
     },
     id = NULL,
     createNextChallenge = function() {
-      private$challenges <- append(private$challenges, MathChallenge$new())
+      if (private$mode == "test") {
+        private$challenges <- append(private$challenges, TestChallenge$new())
+      } else {
+        private$challenges <- append(private$challenges, MathChallenge$new())
+      }
       invisible(self)
     },
     getChallenge = function() {
@@ -75,6 +91,7 @@ Game <- R6Class(
     }
   ),
   private = list(
+    mode = "default",
     challenges = list(),
     startTime = NULL,
     duration = NULL
