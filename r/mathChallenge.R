@@ -32,6 +32,15 @@ highscoreTable <- data.frame(
 # holds a list of running games
 gameList <- list()
 
+#' logs the message and returns the message so no
+#' additional statement is necessary
+logger <- function(message) {
+  out <- paste(as.character(Sys.time()), "-", 
+      toJSON(message, auto_unbox = TRUE), "\n")
+  cat(out)
+  return(message)
+}
+
 
 ## deliver static content
 
@@ -44,11 +53,9 @@ gameList <- list()
 # log some information about incoming requests
 #* @filter logger
 function(req){
-  str(req$QUERY_STRING)
-  query <- "" #str_remove(str_replace_all(req$QUERY_STRING, "&", " "), "\\?")
   cat(as.character(Sys.time()), "-", 
       req$REQUEST_METHOD, req$PATH_INFO, "-", 
-      query, "@", req$REMOTE_ADDR, "\n")
+      str_remove(str_replace_all(req$QUERY_STRING, "&", " "), "\\?"), "@", req$REMOTE_ADDR, "\n")
   plumber::forward()
 }
 
@@ -62,16 +69,16 @@ function(res, name, country="unknown", password) {
   name <- str_squish(name)
   if (str_length(name) < 2 || str_length(password) <= 3) {
     res$status <- 400
-    list(error = "name or password invalid")
+    logger(list(error = "name or password invalid"))
   } else if (nrow(playerTable[tolower(playerTable$name) == tolower(name),])==1) {
     res$status <- 400
-    list(error = "name already assigned to another player")
+    logger(list(error = "name already assigned to another player"))
   } else {
     id <- UUIDgenerate()
     salt <- format(Sys.time(), "%s")
     hash <- digest(paste0(password, salt), algo = "sha512")
     playerTable[nrow(playerTable)+1,] <<- c(id, name, country, hash, salt)
-    list(player = id)
+    logger(list(player = id))
   }
 }
 
@@ -86,26 +93,26 @@ function(res, name, country="unknown", password) {
 function(res, name, password) {
   if (nrow(playerTable[playerTable$name==name,]) == 0) {
     res$status <- 400
-    list(error = "unknown user")
+    logger(list(error = "unknown user"))
   } else if (digest(paste0(password, playerTable[playerTable$name==name,"salt"]), algo = "sha512") == playerTable[playerTable$name==name,"passwordHash"]) {
-    list(player=playerTable[playerTable$name==name,"id"])
+    logger(list(player=playerTable[playerTable$name==name,"id"]))
   } else {
     res$status <- 400
-    list(error = "invalid password")
+    logger(list(error = "invalid password"))
   }
 }
 
 # start a new game
-#* @get /newGame/<id>
+#* @get /newGame/<player>
 #* @serializer unboxedJSON
-function(id){
-  print(id)
-  if (playerTable[playerTable$id==id,]==0) {
+function(res, player){
+  if (nrow(playerTable[playerTable$id==player,])==0) {
     res$status <- 400
-    list(error = paste0("invalid player id: '", id, "'"))
+    list(error = paste0("invalid player id: '", player, "'"))
   } else {
     newGame <- Game$new(mode = ifelse(TEST_MODE, "test", "default"))
-    gameList <- append(gameList, list(id = newGame))
+    gameList <- append(gameList, newGame)
+    names(gameList)[length(gameList)] <- player
     list(question = newGame$getChallenge()$getQuestion())
   }
 }
