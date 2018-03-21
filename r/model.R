@@ -16,7 +16,7 @@ Challenge <- R6Class(
       } else {
         correct <- private$answer == private$solution
       }
-      list(correct = correct, solution = private$solution)
+      list(correct = correct, solution = as.character(private$solution))
     },
     toJSON = function() {
       jsonlite::toJSON(list(category=self$category, question=self$content[["question"]]), auto_unbox = TRUE)
@@ -68,7 +68,7 @@ Game <- R6Class(
       private$duration - (as.integer(format(Sys.time(), "%s")) - private$startTime)
     },
     getScore = function() {
-      correct <- unlist(sapply(private$challenges, function(x) {x$checkAnswer()}))
+      correct <- sapply(private$challenges, function(x) {x$checkAnswer()[["correct"]]}, USE.NAMES = FALSE)
       sum(correct[correct==TRUE])
     },
     toJSON = function() {

@@ -36,17 +36,25 @@ highscoreTable <- data.frame(
 # holds a list of running games
 gameList <- list()
 
-#' logs the message and returns the message so no
+#' logs x and returns x so no
 #' additional statement is necessary
-logger <- function(message, mode = "json") {
+logger <- function(x, mode = "json") {
   if (mode == "plain") {
-    out <- paste(as.character(Sys.time()), "-", message)
+    out <- paste(as.character(Sys.time()), "-", x)
   } else {  # default json
     out <- paste(as.character(Sys.time()), "-", 
-                 toJSON(message, auto_unbox = TRUE))
+                 toJSON(x, auto_unbox = TRUE))
   }
-  if (is.null(LOG_FILE)) {cat(out, "\n")} else {write(x = out, file = LOG_FILE, append = TRUE)}
-  return(message)
+  if (is.null(LOG_FILE)) {message(out)} else {write(x = out, file = LOG_FILE, append = TRUE)}
+  return(x)
+}
+
+#' clean up outdated games
+cleanUpGames <- function() {
+  outdated <- -3600
+  gameTime <- sapply(gameList, function(game) {game$getTime()})
+  if (length(gameTime[gameTime <= outdated] > 0)) logger(paste("remove", length(gameTime[gameTime <= outdated]), "outdated games during clean up"))
+  gameList[gameTime > outdated]
 }
 
 
@@ -59,13 +67,13 @@ list()
 ## web API
 
 # log some information about incoming requests
-#* @filter logger
+#* @filter requestLogger
 function(req){
   query <- str_remove(str_replace_all(req$QUERY_STRING, "&", " "), "\\?")
   out <- paste0("\n", as.character(Sys.time()), " - ", 
       req$REQUEST_METHOD, " ", req$PATH_INFO, 
       if (str_length(query) > 0) paste(" -", query), " @ ", req$REMOTE_ADDR)
-  if (is.null(LOG_FILE)) {cat(out,"\n")} else {write(x = out, file = LOG_FILE, append = TRUE)}
+  if (is.null(LOG_FILE)) {message(out)} else {write(x = out, file = LOG_FILE, append = TRUE)}
   plumber::forward()
 }
 
@@ -94,7 +102,7 @@ function(res, name, country="unknown", password) {
 
 # signIn for registred player
 #
-# TODO: add some brute force protection, e.g. timeout or lock account
+# TODO: add some basic brute force and DOS protection, e.g. timeout or lock account
 #
 #* @post /signIn
 #* @param name
@@ -116,10 +124,8 @@ function(res, name, password) {
 #* @get /newGame/<player>
 #* @serializer unboxedJSON
 function(res, player){
-  # first clean up game list
-  gameTime <- sapply(gameList, function(game) {game$getTime()})
-  if (length(gameTime[gameTime <= -3600] > 0)) logger(paste("remove", length(gameTime[gameTime <= -3600]), "outdated games during clean up"))
-  gameList <<- gameList[gameTime > -3600]
+  gameList <<- cleanUpGames() # first clean up game list
+  gameList[player] <<- NULL # remove game associated with player if there is any
   
   if (nrow(playerTable[playerTable$id==player,])==0) {
     res$status <- 400
@@ -127,7 +133,7 @@ function(res, player){
   } else {
     newGame <- Game$new(mode = ifelse(TEST_MODE, "test", "default"))
     gameList <<- append(gameList, newGame)
-    names(gameList)[length(gameList)] <- player
+    names(gameList)[length(gameList)] <<- player
     logger(list(question = newGame$getChallenge()$getQuestion()))
   }
 }
@@ -136,6 +142,18 @@ function(res, player){
 #* @get /answer/<player>/<answer>
 #* @serializer unboxedJSON
 function(res, player, answer) {
-  
+  if (!player %in% names(gameList)) {
+    res$status <- 400
+    logger(list(error = paste0("no game found")))
+  } else {
+    game <- gameList[[player]]
+    if (game$getTime() > 0) { # the answer is valid, send next question
+      result <- game$getChallenge()$setAnswer(answer)$checkAnswer()
+      nextQuestion <- game$createNextChallenge()$getChallenge()$getQuestion()
+      logger(append(result, list(question = nextQuestion)))
+    } else { # the answer is not valid anymore, no new question, game ends
+      logger(list(score = game$getScore()))
+    }
+  }
 }
 

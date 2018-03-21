@@ -109,19 +109,31 @@ runTest(logMessage = "sign up user alice:password",
 runTest(logMessage = "try to start new game with invalid player ID",
         method = "GET",
         url = paste0("http://127.0.0.1:8000/newGame/", UUIDgenerate()),
-        resPattern = paste0('\\{\\"error\\":\\"unknown user\\"\\}'))
+        resPattern = '\\{\\"error\\":\\"unknown user\\"\\}')
 
 question <- runTest(logMessage = "start new game for player alice",
                     method = "GET",
                     url = paste0("http://127.0.0.1:8000/newGame/", alice),
-                    resPattern = paste0('\\{\\"question\\":\\".*\\"\\}'),
+                    resPattern = '\\{\\"question\\":\\".*\\"\\}',
                     returnRes = TRUE)["question"]
 
 question <- runTest(logMessage = "answer question correctly",
+                    method = "GET",
+                    url = paste0("http://127.0.0.1:8000/answer/", alice, "/", eval(parse(text = str_remove(question, "=")))),
+                    resPattern = '\\{\\"correct\\":true,\\"solution\\":\\".*\\",\\"question\\":\\".*\\"\\}',
+                    returnRes = TRUE)["question"]
+
+question <- runTest(logMessage = "answer question incorrectly",
+                    method = "GET",
+                    url = paste0("http://127.0.0.1:8000/answer/", alice, "/", eval(parse(text = str_remove(question, "="))) + 1),
+                    resPattern = '\\{\\"correct\\":false,\\"solution\\":\\".*\\",\\"question\\":\\".*\\"\\}',
+                    returnRes = TRUE)["question"]
+
+runTest(logMessage = "try to answer with an invalid player ID",
         method = "GET",
-        url = paste0("http://127.0.0.1:8000/answer/", alice, "/", eval(parse(text = str_remove(question, "=")))),
-        resPattern = paste0('\\{\\"correct\\":\\"true\\",\\"question\\":\\".*\\"\\}'),
-        returnRes = TRUE)["question"]
+        url = paste0("http://127.0.0.1:8000/answer/", UUIDgenerate(), "/", eval(parse(text = str_remove(question, "="))) + 1),
+        resPattern = '\\{\\"error\\":\\"no game found\\"\\}')
+
 
 cat("\nTests executed:\t", green$bold(tests["executed"]), "\nTests failed:\t", red$bold(tests["failed"]), "\n")
 
