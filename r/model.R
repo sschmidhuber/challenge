@@ -43,18 +43,6 @@ MathChallenge <- R6Class(
   )
 )
 
-# this class is ment for testing purposes
-TestChallenge <- R6Class(
-  "TestChallenge",
-  inherit = Challenge,
-  public = list(
-    initialize = function() {
-      private$question <- "1 + 1 ="
-      private$solution <- 2
-    }
-  )
-)
-
 Game <- R6Class(
   "Game",
   public = list(
@@ -66,8 +54,8 @@ Game <- R6Class(
     },
     id = NULL,
     createNextChallenge = function() {
-      if (private$mode == "test") {
-        private$challenges <- append(private$challenges, TestChallenge$new())
+      if (private$mode == "math") {
+        private$challenges <- append(private$challenges, MathChallenge$new())
       } else {
         private$challenges <- append(private$challenges, MathChallenge$new())
       }

@@ -38,9 +38,13 @@ gameList <- list()
 
 #' logs the message and returns the message so no
 #' additional statement is necessary
-logger <- function(message) {
-  out <- paste(as.character(Sys.time()), "-", 
-      toJSON(message, auto_unbox = TRUE))
+logger <- function(message, mode = "json") {
+  if (mode == "plain") {
+    out <- paste(as.character(Sys.time()), "-", message)
+  } else {  # default json
+    out <- paste(as.character(Sys.time()), "-", 
+                 toJSON(message, auto_unbox = TRUE))
+  }
   if (is.null(LOG_FILE)) {cat(out, "\n")} else {write(x = out, file = LOG_FILE, append = TRUE)}
   return(message)
 }
@@ -49,7 +53,7 @@ logger <- function(message) {
 ## deliver static content
 
 #* @assets ./web /
-#list()
+list()
 
 
 ## web API
@@ -57,9 +61,10 @@ logger <- function(message) {
 # log some information about incoming requests
 #* @filter logger
 function(req){
+  query <- str_remove(str_replace_all(req$QUERY_STRING, "&", " "), "\\?")
   out <- paste0("\n", as.character(Sys.time()), " - ", 
-      req$REQUEST_METHOD, " ", req$PATH_INFO, " - ", 
-      str_remove(str_replace_all(req$QUERY_STRING, "&", " "), "\\?"), " @ ", req$REMOTE_ADDR)
+      req$REQUEST_METHOD, " ", req$PATH_INFO, 
+      if (str_length(query) > 0) paste(" -", query), " @ ", req$REMOTE_ADDR)
   if (is.null(LOG_FILE)) {cat(out,"\n")} else {write(x = out, file = LOG_FILE, append = TRUE)}
   plumber::forward()
 }
@@ -111,13 +116,26 @@ function(res, name, password) {
 #* @get /newGame/<player>
 #* @serializer unboxedJSON
 function(res, player){
+  # first clean up game list
+  gameTime <- sapply(gameList, function(game) {game$getTime()})
+  if (length(gameTime[gameTime <= -3600] > 0)) logger(paste("remove", length(gameTime[gameTime <= -3600]), "outdated games during clean up"))
+  gameList <<- gameList[gameTime > -3600]
+  
   if (nrow(playerTable[playerTable$id==player,])==0) {
     res$status <- 400
-    list(error = paste0("invalid player id: '", player, "'"))
+    logger(list(error = paste0("unknown user")))
   } else {
     newGame <- Game$new(mode = ifelse(TEST_MODE, "test", "default"))
-    gameList <- append(gameList, newGame)
+    gameList <<- append(gameList, newGame)
     names(gameList)[length(gameList)] <- player
     logger(list(question = newGame$getChallenge()$getQuestion()))
   }
 }
+
+# answer a question
+#* @get /answer/<player>/<answer>
+#* @serializer unboxedJSON
+function(res, player, answer) {
+  
+}
+

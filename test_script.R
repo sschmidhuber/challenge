@@ -6,6 +6,7 @@ library(jsonlite)
 library(crayon)
 library(readr)
 library(subprocess)
+library(uuid)
 
 args <- commandArgs(trailingOnly = TRUE)
 server <- NULL
@@ -21,21 +22,21 @@ runTest <- function(url, query, resPattern, logMessage = "", method = "GET", ret
   }
   
   if (str_length(logMessage) == 0) {
-    cat(bold("\nTest", tests["executed"] + 1,"\n", sep = ""))
+    cat(bold("\n-- Test", tests["executed"] + 1," --\n", sep = ""))
   } else {
-    cat("\n", bold(logMessage, " (Test ", tests["executed"] + 1, ")\n", sep = ""), sep = "")
+    cat("\n", bold("-- ", logMessage, " (Test ", tests["executed"] + 1, ") --\n", sep = ""), sep = "")
   }
   
   tests["executed"] <<- tests["executed"] + 1
   if (str_detect(res, resPattern)) {
-    cat(green$bold("SUCCESS"), toJSON(content(res), auto_unbox = TRUE), "\n")
+    cat(green$bold("SUCCESS"), toJSON(suppressMessages(content(res)), auto_unbox = TRUE), "\n")
   } else {
     cat(red$bold("FAILED"), toJSON(content(res), auto_unbox = TRUE), "\n")
     cat("expected response pattern:", resPattern, "\n")
     tests["failed"] <<- tests["failed"] + 1
   }
   
-  if (returnRes) content(res)
+  if (returnRes) suppressMessages(content(res))
 }
 
 system(command = "clear")
@@ -56,11 +57,11 @@ runTest(logMessage = "try to sign in with unregistered user",
        resPattern = '\\{\\"error\\":\\"unknown user\\"\\}')
 
 alice <- runTest(logMessage = "sign up user alice:password",
-        method = "POST",
-        url = "http://127.0.0.1:8000/signUp",
-        query = list(name="alice", country="Germany", password="password"),
-        resPattern = '\\{\\"player\\":\\".*\\"\\}',
-        returnRes = TRUE)["player"]
+                 method = "POST",
+                 url = "http://127.0.0.1:8000/signUp",
+                 query = list(name="alice", country="Germany", password="password"),
+                 resPattern = '\\{\\"player\\":\\".*\\"\\}',
+                 returnRes = TRUE)["player"]
 
 runTest(logMessage = "try to sign up with invalid too short password",
         method = "POST",
@@ -80,12 +81,12 @@ runTest(logMessage = "try to sign up with username only differs by upper case le
         query = list(name="Alice", country="Germany", password="12345"),
         resPattern = '\\{\\"error\\":\\"name already assigned to another player\\"\\}')
 
-bob <- runTest(logMessage = "try to sign up without parameter country",
-        method = "POST",
-        url = "http://127.0.0.1:8000/signUp",
-        query = list(name="Bob", password="12345"),
-        resPattern = '\\{\\"player\\":\\".*\\"\\}',
-        returnRes = TRUE)
+bob <- runTest(logMessage = "sign up Bob:12345, without country parameter",
+               method = "POST",
+               url = "http://127.0.0.1:8000/signUp",
+               query = list(name="Bob", password="12345"),
+               resPattern = '\\{\\"player\\":\\".*\\"\\}',
+               returnRes = TRUE)
 
 runTest(logMessage = "sign up user Bob:12345",
         method = "POST",
@@ -105,11 +106,16 @@ runTest(logMessage = "sign up user alice:password",
         query = list(name="alice", password="password"),
         resPattern = paste0('\\{\\"player\\":\\"', alice, '\\"\\}'))
 
-question <- runTest(logMessage = "start new game for player alice",
+runTest(logMessage = "try to start new game with invalid player ID",
         method = "GET",
-        url = paste0("http://127.0.0.1:8000/newGame/", alice),
-        resPattern = paste0('\\{\\"question\\":\\".*\\"\\}'),
-        returnRes = TRUE)["question"]
+        url = paste0("http://127.0.0.1:8000/newGame/", UUIDgenerate()),
+        resPattern = paste0('\\{\\"error\\":\\"unknown user\\"\\}'))
+
+question <- runTest(logMessage = "start new game for player alice",
+                    method = "GET",
+                    url = paste0("http://127.0.0.1:8000/newGame/", alice),
+                    resPattern = paste0('\\{\\"question\\":\\".*\\"\\}'),
+                    returnRes = TRUE)["question"]
 
 question <- runTest(logMessage = "answer question correctly",
         method = "GET",
