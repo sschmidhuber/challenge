@@ -5,9 +5,10 @@ library(stringr)
 library(jsonlite)
 library(crayon)
 library(readr)
+library(subprocess)
 
 args <- commandArgs(trailingOnly = TRUE)
-server <- FALSE # true if the server was started
+server <- NULL
 tests <- c(executed = 0, failed = 0)
 
 runTest <- function(url, query, resPattern, logMessage = "", method = "GET", returnRes = FALSE) {
@@ -41,8 +42,7 @@ system(command = "clear")
 if (length(args) != 0) {
   if (str_detect(args, pattern = "start-server")) {
     cat("\nstart server...\n")
-    system(command = "r/app.R &>test.log &")
-    server <- TRUE
+    server <- spawn_process(command = "r/app.R", arguments = c("--log-to-file"))
     Sys.sleep(1)
   }
 }
@@ -111,14 +111,19 @@ question <- runTest(logMessage = "start new game for player alice",
         resPattern = paste0('\\{\\"question\\":\\".*\\"\\}'),
         returnRes = TRUE)["question"]
 
+question <- runTest(logMessage = "answer question correctly",
+        method = "GET",
+        url = paste0("http://127.0.0.1:8000/answer/", alice, "/", eval(parse(text = str_remove(question, "=")))),
+        resPattern = paste0('\\{\\"correct\\":\\"true\\",\\"question\\":\\".*\\"\\}'),
+        returnRes = TRUE)["question"]
 
-cat("\nTests executed:\t", green$bold(tests["executed"]), "\nTests failed:\t", red$bold(tests["failed"]), "\n\n")
+cat("\nTests executed:\t", green$bold(tests["executed"]), "\nTests failed:\t", red$bold(tests["failed"]), "\n")
 
 # show logs and kill server
-if (server) {
-  testLog <- file(description = "test.log")
+if (!is.null(server)) {
+  testLog <- file(description = "server.log")
   cat(read_file(testLog))
-  file.remove("test.log")
+  file.remove("server.log")
   cat("\nshutdown server...\n")
-  system(command = "pkill R")
+  if (process_terminate(server) == TRUE) cat("terminated\n\n")
 }

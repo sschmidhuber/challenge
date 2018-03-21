@@ -10,6 +10,10 @@
 source("r/model.R")
 
 TEST_MODE <- TRUE
+LOG_FILE <- NULL
+
+# create logfile in non interactive mode
+if (!interactive()) {LOG_FILE <- "server.log"}
 
 # holds details about players
 playerTable <- data.frame(
@@ -36,8 +40,8 @@ gameList <- list()
 #' additional statement is necessary
 logger <- function(message) {
   out <- paste(as.character(Sys.time()), "-", 
-      toJSON(message, auto_unbox = TRUE), "\n")
-  cat(out)
+      toJSON(message, auto_unbox = TRUE))
+  if (is.null(LOG_FILE)) {cat(out, "\n")} else {write(x = out, file = LOG_FILE, append = TRUE)}
   return(message)
 }
 
@@ -53,9 +57,10 @@ logger <- function(message) {
 # log some information about incoming requests
 #* @filter logger
 function(req){
-  cat(as.character(Sys.time()), "-", 
-      req$REQUEST_METHOD, req$PATH_INFO, "-", 
-      str_remove(str_replace_all(req$QUERY_STRING, "&", " "), "\\?"), "@", req$REMOTE_ADDR, "\n")
+  out <- paste0("\n", as.character(Sys.time()), " - ", 
+      req$REQUEST_METHOD, " ", req$PATH_INFO, " - ", 
+      str_remove(str_replace_all(req$QUERY_STRING, "&", " "), "\\?"), " @ ", req$REMOTE_ADDR)
+  if (is.null(LOG_FILE)) {cat(out,"\n")} else {write(x = out, file = LOG_FILE, append = TRUE)}
   plumber::forward()
 }
 
@@ -113,6 +118,6 @@ function(res, player){
     newGame <- Game$new(mode = ifelse(TEST_MODE, "test", "default"))
     gameList <- append(gameList, newGame)
     names(gameList)[length(gameList)] <- player
-    list(question = newGame$getChallenge()$getQuestion())
+    logger(list(question = newGame$getChallenge()$getQuestion()))
   }
 }
