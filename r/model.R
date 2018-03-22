@@ -47,6 +47,7 @@ Game <- R6Class(
   "Game",
   public = list(
     initialize = function(mode = "default", duration = 30) {
+      self$id <- UUIDgenerate()
       private$mode <- mode
       private$startTime <- as.integer(format(Sys.time(), "%s"))
       private$duration <- duration

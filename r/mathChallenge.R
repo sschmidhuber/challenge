@@ -27,6 +27,7 @@ playerTable <- data.frame(
 
 # holds information about high scores
 highscoreTable <- data.frame(
+  game=character(),
   player=character(),
   score=integer(),
   date=as.Date(character()),
@@ -131,7 +132,7 @@ function(res, player){
     res$status <- 400
     logger(list(error = paste0("unknown user")))
   } else {
-    newGame <- Game$new(mode = ifelse(TEST_MODE, "test", "default"))
+    newGame <- Game$new(mode = if (TEST_MODE) "test" else "default", duration = if (TEST_MODE) 2 else 30)
     gameList <<- append(gameList, newGame)
     names(gameList)[length(gameList)] <<- player
     logger(list(question = newGame$getChallenge()$getQuestion()))
@@ -152,8 +153,41 @@ function(res, player, answer) {
       nextQuestion <- game$createNextChallenge()$getChallenge()$getQuestion()
       logger(append(result, list(question = nextQuestion)))
     } else { # the answer is not valid anymore, no new question, game ends
+      gameList[player] <<- NULL
+      highscoreTable[nrow(highscoreTable) + 1,] <<- list(game$id, filter(playerTable, id == player)[["name"]], game$getScore(), Sys.Date())
       logger(list(score = game$getScore()))
     }
   }
 }
 
+# finish game
+# this endpoint will be polled by the client to achieve a real time like behavior
+#* @get /finish/<player>
+#* @serializer unboxedJSON
+function(res, player) {
+  if (!player %in% names(gameList)) {
+    res$status <- 400
+    logger(list(error = paste0("no game found")))
+  } else {
+    game <- gameList[[player]]
+    timeLeft <- game$getTime()
+    if (timeLeft > 0) {
+      logger(list(finished = FALSE))
+    } else {
+      gameList[player] <<-NULL
+      highscoreTable[nrow(highscoreTable) + 1,] <<- list(game$id, filter(playerTable, id == player)[["name"]], game$getScore(), Sys.Date())
+      logger(list(finished = TRUE, score = game$getScore()))
+    }
+  }
+}
+
+# get highscore table
+#* @get /highscoreTable
+#* @serializer unboxedJSON
+function() {
+  if (nrow(highscoreTable) == 0) {
+    logger(list())
+  } else {
+    logger(select(highscoreTable, score, player, date) %>% arrange(desc(score)))
+  }
+}

@@ -134,6 +134,29 @@ runTest(logMessage = "try to answer with an invalid player ID",
         url = paste0("http://127.0.0.1:8000/answer/", UUIDgenerate(), "/", eval(parse(text = str_remove(question, "="))) + 1),
         resPattern = '\\{\\"error\\":\\"no game found\\"\\}')
 
+runTest(logMessage = "try to finish the game",
+        method = "GET",
+        url = paste0("http://127.0.0.1:8000/finish/", alice),
+        resPattern = '\\{\\"finished\\":false\\}')
+
+runTest(logMessage = "get empty highscore table",
+        method = "GET",
+        url = "http://127.0.0.1:8000/highscoreTable",
+        resPattern = '\\[\\]')
+
+Sys.sleep(2)
+runTest(logMessage = "try to finish the game, after waiting 2 seconds",
+        method = "GET",
+        url = paste0("http://127.0.0.1:8000/finish/", alice),
+        resPattern = '\\{\\"finished\\":true,\\"score\\":1\\}')
+
+runTest(logMessage = "get highscore table",
+        method = "GET",
+        url = "http://127.0.0.1:8000/highscoreTable",
+        resPattern = paste0('\\[\\{\\"score\\":1,\\"player\\":\\"alice\\",\\"date\\":\\"', Sys.Date(), '\\"\\}\\]'))
+
+# TODO: create new game and answer after time ran out
+
 
 cat("\nTests executed:\t", green$bold(tests["executed"]), "\nTests failed:\t", red$bold(tests["failed"]), "\n")
 
