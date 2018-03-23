@@ -12,7 +12,7 @@ args <- commandArgs(trailingOnly = TRUE)
 server <- NULL
 tests <- c(executed = 0, failed = 0)
 
-runTest <- function(url, query, resPattern, logMessage = "", method = "GET", returnRes = FALSE) {
+runTest <- function(url, query = "", resPattern, logMessage = "", method = "GET", returnRes = FALSE) {
   if (method == "GET") {
     res <- GET(url = url)
   } else if (method == "POST") {
@@ -48,13 +48,16 @@ if (length(args) != 0) {
   }
 }
 
-## tests
+
+
+## Tests ----------------------------------------------------------------------
+
 
 runTest(logMessage = "try to sign in with unregistered user",
-       method = "POST",
-       url = "http://127.0.0.1:8000/signIn",
-       query = list(password="password", name="alice"),
-       resPattern = '\\{\\"error\\":\\"unknown user\\"\\}')
+        method = "POST",
+        url = "http://127.0.0.1:8000/signIn",
+        query = list(password="password", name="alice"),
+        resPattern = '\\{\\"error\\":\\"unknown user\\"\\}')
 
 alice <- runTest(logMessage = "sign up user alice:password",
                  method = "POST",
@@ -111,27 +114,45 @@ runTest(logMessage = "try to start new game with invalid player ID",
         url = paste0("http://127.0.0.1:8000/newGame/", UUIDgenerate()),
         resPattern = '\\{\\"error\\":\\"unknown user\\"\\}')
 
-question <- runTest(logMessage = "start new game for player alice",
-                    method = "GET",
-                    url = paste0("http://127.0.0.1:8000/newGame/", alice),
-                    resPattern = '\\{\\"question\\":\\".*\\"\\}',
-                    returnRes = TRUE)["question"]
+question_alice <- runTest(logMessage = "start new game for player alice",
+                          method = "GET",
+                          url = paste0("http://127.0.0.1:8000/newGame/", alice),
+                          resPattern = '\\{\\"question\\":\\".*\\"\\}',
+                          returnRes = TRUE)["question"]
 
-question <- runTest(logMessage = "answer question correctly",
-                    method = "GET",
-                    url = paste0("http://127.0.0.1:8000/answer/", alice, "/", eval(parse(text = str_remove(question, "=")))),
-                    resPattern = '\\{\\"correct\\":true,\\"solution\\":\\".*\\",\\"question\\":\\".*\\"\\}',
-                    returnRes = TRUE)["question"]
+question_alice <- runTest(logMessage = "answer question correctly",
+                          method = "GET",
+                          url = paste0("http://127.0.0.1:8000/answer/", alice, "/", eval(parse(text = str_remove(question_alice, "=")))),
+                          resPattern = '\\{\\"correct\\":true,\\"solution\\":\\".*\\",\\"question\\":\\".*\\"\\}',
+                          returnRes = TRUE)["question"]
 
-question <- runTest(logMessage = "answer question incorrectly",
-                    method = "GET",
-                    url = paste0("http://127.0.0.1:8000/answer/", alice, "/", eval(parse(text = str_remove(question, "="))) + 1),
-                    resPattern = '\\{\\"correct\\":false,\\"solution\\":\\".*\\",\\"question\\":\\".*\\"\\}',
-                    returnRes = TRUE)["question"]
+question_bob <- runTest(logMessage = "start new game for player bob",
+                        method = "GET",
+                        url = paste0("http://127.0.0.1:8000/newGame/", bob),
+                        resPattern = '\\{\\"question\\":\\".*\\"\\}',
+                        returnRes = TRUE)["question"]
+
+question_alice <- runTest(logMessage = "answer question incorrectly",
+                          method = "GET",
+                          url = paste0("http://127.0.0.1:8000/answer/", alice, "/", eval(parse(text = str_remove(question_alice, "="))) + 1),
+                          resPattern = '\\{\\"correct\\":false,\\"solution\\":\\".*\\",\\"question\\":\\".*\\"\\}',
+                          returnRes = TRUE)["question"]
+
+question_bob <- runTest(logMessage = "answer question correctly",
+                        method = "GET",
+                        url = paste0("http://127.0.0.1:8000/answer/", bob, "/", eval(parse(text = str_remove(question_bob, "=")))),
+                        resPattern = '\\{\\"correct\\":true,\\"solution\\":\\".*\\",\\"question\\":\\".*\\"\\}',
+                        returnRes = TRUE)["question"]
+
+question_bob <- runTest(logMessage = "answer question correctly",
+                        method = "GET",
+                        url = paste0("http://127.0.0.1:8000/answer/", bob, "/", eval(parse(text = str_remove(question_bob, "=")))),
+                        resPattern = '\\{\\"correct\\":true,\\"solution\\":\\".*\\",\\"question\\":\\".*\\"\\}',
+                        returnRes = TRUE)["question"]
 
 runTest(logMessage = "try to answer with an invalid player ID",
         method = "GET",
-        url = paste0("http://127.0.0.1:8000/answer/", UUIDgenerate(), "/", eval(parse(text = str_remove(question, "="))) + 1),
+        url = paste0("http://127.0.0.1:8000/answer/", UUIDgenerate(), "/", eval(parse(text = str_remove(question_alice, "="))) + 1),
         resPattern = '\\{\\"error\\":\\"no game found\\"\\}')
 
 runTest(logMessage = "try to finish the game",
@@ -150,15 +171,16 @@ runTest(logMessage = "try to finish the game, after waiting 2 seconds",
         url = paste0("http://127.0.0.1:8000/finish/", alice),
         resPattern = '\\{\\"finished\\":true,\\"score\\":1\\}')
 
+runTest(logMessage = "try to answer question after geme expired",
+        method = "GET",
+        url = paste0("http://127.0.0.1:8000/answer/", bob, "/", eval(parse(text = str_remove(question_bob, "=")))),
+        resPattern = '\\{\\"score\\":2\\}')
+
 runTest(logMessage = "get highscore table",
         method = "GET",
         url = "http://127.0.0.1:8000/highscoreTable",
-        resPattern = paste0('\\[\\{\\"score\\":1,\\"player\\":\\"alice\\",\\"date\\":\\"', Sys.Date(), '\\"\\}\\]'))
+        resPattern = paste0('\\[\\{\\"score\\":2,\\"player\\":\\"Bob\\",\\"date\\":\\"', Sys.Date(), '\\"\\},\\{\\"score\\":1,\\"player\\":\\"alice\\",\\"date\\":\\"', Sys.Date(), '\\"\\}\\]'))
 
-# TODO: create new game and answer after time ran out
-
-
-cat("\nTests executed:\t", green$bold(tests["executed"]), "\nTests failed:\t", red$bold(tests["failed"]), "\n")
 
 # show logs and kill server
 if (!is.null(server)) {
@@ -166,5 +188,7 @@ if (!is.null(server)) {
   cat(read_file(testLog))
   file.remove("server.log")
   cat("\nshutdown server...\n")
-  if (process_terminate(server) == TRUE) cat("terminated\n\n")
+  if (process_terminate(server) == TRUE) cat("terminated\n")
 }
+
+cat("\nTests executed:\t", green$bold(tests["executed"]), "\nTests failed:\t", red$bold(tests["failed"]), "\n\n")
