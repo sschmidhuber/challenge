@@ -63,10 +63,10 @@ alice <- runTest(log_msg = "sign up user alice:password",
                  method = "POST",
                  url = "http://127.0.0.1:8000/signUp",
                  query = list(name="alice", country="Germany", password="password"),
-                 res_pattern = '\\{\\"player\\":\\".*\\"\\}',
-                 return_res = TRUE)["player"]
+                 res_pattern = '\\{\\"player\\":\\".*\\",\\"name\\":\\"alice\\"\\}',
+                 return_res = TRUE)[["player"]]
 
-runTest(log_msg = "try to sign up with invalid too short password",
+runTest(log_msg = "try to sign up with too short password",
         method = "POST",
         url = "http://127.0.0.1:8000/signUp",
         query = list(name="bob", country="Germany", password="pw"),
@@ -88,14 +88,14 @@ bob <- runTest(log_msg = "sign up Bob:12345, without country parameter",
                method = "POST",
                url = "http://127.0.0.1:8000/signUp",
                query = list(name="Bob", password="12345"),
-               res_pattern = '\\{\\"player\\":\\".*\\"\\}',
-               return_res = TRUE)
+               res_pattern = '\\{\\"player\\":\\".*\\",\\"name\\":\\"Bob\\"\\}',
+               return_res = TRUE)[["player"]]
 
-runTest(log_msg = "sign up user Bob:12345",
+runTest(log_msg = "sign in user Bob:12345",
         method = "POST",
         url = "http://127.0.0.1:8000/signIn",
         query = list(name="Bob", password="12345"),
-        res_pattern = paste0('\\{\\"player\\":\\"', bob, '\\"\\}'))
+        res_pattern = paste0('\\{\\"player\\":\\"', bob, '\\",\\"name\\":\\"Bob\\"\\}'))
 
 runTest(log_msg = "try to sign in with invalid password",
         method = "POST",
@@ -103,11 +103,11 @@ runTest(log_msg = "try to sign in with invalid password",
         query = list(name="alice", password="12345"),
         res_pattern = '\\{\\"error\\":\\"invalid password\\"\\}')
 
-runTest(log_msg = "sign up user alice:password",
+runTest(log_msg = "sign in user alice:password",
         method = "POST",
         url = "http://127.0.0.1:8000/signIn",
         query = list(name="alice", password="password"),
-        res_pattern = paste0('\\{\\"player\\":\\"', alice, '\\"\\}'))
+        res_pattern = paste0('\\{\\"player\\":\\"', alice, '\\",\\"name\\":\\"alice\\"\\}'))
 
 runTest(log_msg = "try to start new game with invalid player ID",
         method = "GET",
@@ -118,37 +118,37 @@ question_alice <- runTest(log_msg = "start new game for player alice",
                           method = "GET",
                           url = paste0("http://127.0.0.1:8000/newGame/", alice),
                           res_pattern = '\\{\\"question\\":\\".*\\"\\}',
-                          return_res = TRUE)["question"]
+                          return_res = TRUE)[["question"]]
 
 question_alice <- runTest(log_msg = "answer question correctly",
                           method = "GET",
                           url = paste0("http://127.0.0.1:8000/answer/", alice, "/", eval(parse(text = str_remove(question_alice, "=")))),
                           res_pattern = '\\{\\"correct\\":true,\\"solution\\":\\".*\\",\\"question\\":\\".*\\"\\}',
-                          return_res = TRUE)["question"]
+                          return_res = TRUE)[["question"]]
 
 question_bob <- runTest(log_msg = "start new game for player bob",
                         method = "GET",
                         url = paste0("http://127.0.0.1:8000/newGame/", bob),
                         res_pattern = '\\{\\"question\\":\\".*\\"\\}',
-                        return_res = TRUE)["question"]
+                        return_res = TRUE)[["question"]]
 
 question_alice <- runTest(log_msg = "answer question incorrectly",
                           method = "GET",
                           url = paste0("http://127.0.0.1:8000/answer/", alice, "/", eval(parse(text = str_remove(question_alice, "="))) + 1),
                           res_pattern = '\\{\\"correct\\":false,\\"solution\\":\\".*\\",\\"question\\":\\".*\\"\\}',
-                          return_res = TRUE)["question"]
+                          return_res = TRUE)[["question"]]
 
 question_bob <- runTest(log_msg = "answer question correctly",
                         method = "GET",
                         url = paste0("http://127.0.0.1:8000/answer/", bob, "/", eval(parse(text = str_remove(question_bob, "=")))),
                         res_pattern = '\\{\\"correct\\":true,\\"solution\\":\\".*\\",\\"question\\":\\".*\\"\\}',
-                        return_res = TRUE)["question"]
+                        return_res = TRUE)[["question"]]
 
 question_bob <- runTest(log_msg = "answer question correctly",
                         method = "GET",
                         url = paste0("http://127.0.0.1:8000/answer/", bob, "/", eval(parse(text = str_remove(question_bob, "=")))),
                         res_pattern = '\\{\\"correct\\":true,\\"solution\\":\\".*\\",\\"question\\":\\".*\\"\\}',
-                        return_res = TRUE)["question"]
+                        return_res = TRUE)[["question"]]
 
 runTest(log_msg = "try to answer with an invalid player ID",
         method = "GET",

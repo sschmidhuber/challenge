@@ -86,18 +86,19 @@ function(req){
 #* @serializer unboxedJSON
 function(res, name, country="unknown", password) {
   name <- str_squish(name)
+  
   if (str_length(name) < 2 || str_length(password) <= 3) {
     res$status <- 400
     logger(list(error = "name or password invalid"))
-  } else if (nrow(player_table[tolower(player_table$name) == tolower(name),])==1) {
+  } else if (nrow(player_table[tolower(player_table$name) == tolower(name),]) == 1) {
     res$status <- 400
     logger(list(error = "name already assigned to another player"))
   } else {
     id <- UUIDgenerate()
     salt <- format(Sys.time(), "%s")
     hash <- digest(paste0(password, salt), algo = "sha512")
-    player_table[nrow(player_table)+1,] <<- c(id, name, country, hash, salt)
-    logger(list(player = id))
+    player_table[nrow(player_table) + 1,] <<- c(id, name, country, hash, salt)
+    logger(list(player = id, name = name))
   }
 }
 
@@ -110,11 +111,11 @@ function(res, name, country="unknown", password) {
 #* @param password
 #* @serializer unboxedJSON
 function(res, name, password) {
-  if (nrow(player_table[player_table$name==name,]) == 0) {
+  if (filter(player_table, name == name) %>% nrow() == 0) {
     res$status <- 400
     logger(list(error = "unknown user"))
-  } else if (digest(paste0(password, player_table[player_table$name==name,"salt"]), algo = "sha512") == player_table[player_table$name==name,"passwordHash"]) {
-    logger(list(player=player_table[player_table$name==name,"id"]))
+  } else if (digest(paste0(password, player_table[player_table$name == name, "salt"]), algo = "sha512") == player_table[player_table$name==name,"passwordHash"]) {
+    logger(list(player = player_table[player_table$name == name, "id"], name = name))
   } else {
     res$status <- 400
     logger(list(error = "invalid password"))
