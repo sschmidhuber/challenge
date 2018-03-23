@@ -11,7 +11,7 @@ Challenge <- R6Class(
       invisible(self)
     },
     checkAnswer = function() {
-      if (private$fuzzyAllowed) {
+      if (private$fuzzy_allowed) {
         correct <- amatch(private$answer, private$solution) == 1
       } else {
         correct <- private$answer == private$solution
@@ -26,7 +26,7 @@ Challenge <- R6Class(
     question = NULL,
     solution = NULL,
     answer = "",
-    fuzzyAllowed = FALSE
+    fuzzy_allowed = FALSE
   )
 )
 
@@ -49,7 +49,7 @@ Game <- R6Class(
     initialize = function(mode = "default", duration = 30) {
       self$id <- UUIDgenerate()
       private$mode <- mode
-      private$startTime <- as.integer(format(Sys.time(), "%s"))
+      private$start_time <- as.integer(format(Sys.time(), "%s"))
       private$duration <- duration
       self$createNextChallenge()
     },
@@ -66,7 +66,7 @@ Game <- R6Class(
       private$challenges[[length(private$challenges)]]
     },
     getTime = function() {
-      private$duration - (as.integer(format(Sys.time(), "%s")) - private$startTime)
+      private$duration - (as.integer(format(Sys.time(), "%s")) - private$start_time)
     },
     getScore = function() {
       correct <- sapply(private$challenges, function(x) {x$checkAnswer()[["correct"]]}, USE.NAMES = FALSE)
@@ -74,7 +74,7 @@ Game <- R6Class(
     },
     toJSON = function() {
       jsonlite::toJSON(list(id = self$id,
-                            startTime = self$startTime,
+                            start_time = self$start_time,
                             duration = self$duration,
                             score =self$score),auto_unbox = TRUE)
     }
@@ -82,7 +82,7 @@ Game <- R6Class(
   private = list(
     mode = "default",
     challenges = list(),
-    startTime = NULL,
+    start_time = NULL,
     duration = NULL
   )
 )

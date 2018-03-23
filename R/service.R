@@ -7,7 +7,7 @@
 
 ## global code; executed at plumb time
 
-source("r/model.R")
+source("R/model.R")
 
 TEST_MODE <- TRUE
 LOG_FILE <- NULL
@@ -16,7 +16,7 @@ LOG_FILE <- NULL
 if (!interactive()) {LOG_FILE <- "server.log"}
 
 # holds details about players
-playerTable <- data.frame(
+player_table <- data.frame(
   id=character(),
   name=character(),
   country=character(),
@@ -26,7 +26,7 @@ playerTable <- data.frame(
 )
 
 # holds information about high scores
-highscoreTable <- data.frame(
+highscore_table <- data.frame(
   game=character(),
   player=character(),
   score=integer(),
@@ -35,7 +35,7 @@ highscoreTable <- data.frame(
 )
 
 # holds a list of running games
-gameList <- list()
+game_list <- list()
 
 #' logs x and returns x so no
 #' additional statement is necessary
@@ -53,9 +53,9 @@ logger <- function(x, mode = "json") {
 #' clean up outdated games
 cleanUpGames <- function() {
   outdated <- -3600
-  gameTime <- sapply(gameList, function(game) {game$getTime()})
+  gameTime <- sapply(game_list, function(game) {game$getTime()})
   if (length(gameTime[gameTime <= outdated] > 0)) logger(paste("remove", length(gameTime[gameTime <= outdated]), "outdated games during clean up"))
-  gameList[gameTime > outdated]
+  game_list[gameTime > outdated]
 }
 
 
@@ -89,14 +89,14 @@ function(res, name, country="unknown", password) {
   if (str_length(name) < 2 || str_length(password) <= 3) {
     res$status <- 400
     logger(list(error = "name or password invalid"))
-  } else if (nrow(playerTable[tolower(playerTable$name) == tolower(name),])==1) {
+  } else if (nrow(player_table[tolower(player_table$name) == tolower(name),])==1) {
     res$status <- 400
     logger(list(error = "name already assigned to another player"))
   } else {
     id <- UUIDgenerate()
     salt <- format(Sys.time(), "%s")
     hash <- digest(paste0(password, salt), algo = "sha512")
-    playerTable[nrow(playerTable)+1,] <<- c(id, name, country, hash, salt)
+    player_table[nrow(player_table)+1,] <<- c(id, name, country, hash, salt)
     logger(list(player = id))
   }
 }
@@ -110,11 +110,11 @@ function(res, name, country="unknown", password) {
 #* @param password
 #* @serializer unboxedJSON
 function(res, name, password) {
-  if (nrow(playerTable[playerTable$name==name,]) == 0) {
+  if (nrow(player_table[player_table$name==name,]) == 0) {
     res$status <- 400
     logger(list(error = "unknown user"))
-  } else if (digest(paste0(password, playerTable[playerTable$name==name,"salt"]), algo = "sha512") == playerTable[playerTable$name==name,"passwordHash"]) {
-    logger(list(player=playerTable[playerTable$name==name,"id"]))
+  } else if (digest(paste0(password, player_table[player_table$name==name,"salt"]), algo = "sha512") == player_table[player_table$name==name,"passwordHash"]) {
+    logger(list(player=player_table[player_table$name==name,"id"]))
   } else {
     res$status <- 400
     logger(list(error = "invalid password"))
@@ -125,16 +125,16 @@ function(res, name, password) {
 #* @get /newGame/<player>
 #* @serializer unboxedJSON
 function(res, player){
-  gameList <<- cleanUpGames() # first clean up game list
-  gameList[player] <<- NULL # remove game associated with player if there is any
+  game_list <<- cleanUpGames() # first clean up game list
+  game_list[player] <<- NULL # remove game associated with player if there is any
   
-  if (nrow(playerTable[playerTable$id==player,])==0) {
+  if (nrow(player_table[player_table$id==player,])==0) {
     res$status <- 400
     logger(list(error = paste0("unknown user")))
   } else {
     newGame <- Game$new(mode = if (TEST_MODE) "test" else "default", duration = if (TEST_MODE) 2 else 30)
-    gameList <<- append(gameList, newGame)
-    names(gameList)[length(gameList)] <<- player
+    game_list <<- append(game_list, newGame)
+    names(game_list)[length(game_list)] <<- player
     logger(list(question = newGame$getChallenge()$getQuestion()))
   }
 }
@@ -143,18 +143,18 @@ function(res, player){
 #* @get /answer/<player>/<answer>
 #* @serializer unboxedJSON
 function(res, player, answer) {
-  if (!player %in% names(gameList)) {
+  if (!player %in% names(game_list)) {
     res$status <- 400
     logger(list(error = paste0("no game found")))
   } else {
-    game <- gameList[[player]]
+    game <- game_list[[player]]
     if (game$getTime() > 0) { # the answer is valid, send next question
       result <- game$getChallenge()$setAnswer(answer)$checkAnswer()
-      nextQuestion <- game$createNextChallenge()$getChallenge()$getQuestion()
-      logger(append(result, list(question = nextQuestion)))
+      next_question <- game$createNextChallenge()$getChallenge()$getQuestion()
+      logger(append(result, list(question = next_question)))
     } else { # the answer is not valid anymore, no new question, game ends
-      gameList[player] <<- NULL
-      highscoreTable[nrow(highscoreTable) + 1,] <<- list(game$id, filter(playerTable, id == player)[["name"]], game$getScore(), Sys.Date())
+      game_list[player] <<- NULL
+      highscore_table[nrow(highscore_table) + 1,] <<- list(game$id, filter(player_table, id == player)[["name"]], game$getScore(), Sys.Date())
       logger(list(score = game$getScore()))
     }
   }
@@ -165,17 +165,17 @@ function(res, player, answer) {
 #* @get /finish/<player>
 #* @serializer unboxedJSON
 function(res, player) {
-  if (!player %in% names(gameList)) {
+  if (!player %in% names(game_list)) {
     res$status <- 400
     logger(list(error = paste0("no game found")))
   } else {
-    game <- gameList[[player]]
-    timeLeft <- game$getTime()
-    if (timeLeft > 0) {
+    game <- game_list[[player]]
+    time_left <- game$getTime()
+    if (time_left > 0) {
       logger(list(finished = FALSE))
     } else {
-      gameList[player] <<-NULL
-      highscoreTable[nrow(highscoreTable) + 1,] <<- list(game$id, filter(playerTable, id == player)[["name"]], game$getScore(), Sys.Date())
+      game_list[player] <<-NULL
+      highscore_table[nrow(highscore_table) + 1,] <<- list(game$id, filter(player_table, id == player)[["name"]], game$getScore(), Sys.Date())
       logger(list(finished = TRUE, score = game$getScore()))
     }
   }
@@ -185,9 +185,9 @@ function(res, player) {
 #* @get /highscoreTable
 #* @serializer unboxedJSON
 function() {
-  if (nrow(highscoreTable) == 0) {
+  if (nrow(highscore_table) == 0) {
     logger(list())
   } else {
-    logger(select(highscoreTable, score, player, date) %>% arrange(desc(score)))
+    logger(select(highscore_table, score, player, date) %>% arrange(desc(score)))
   }
 }

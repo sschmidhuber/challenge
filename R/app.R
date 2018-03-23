@@ -5,6 +5,6 @@
 # This script starts the MathChallenge server
 
 
-source("r/packages.R")
-app <- plumb("r/mathChallenge.R")
+source("R/packages.R")
+app <- plumb("R/service.R")
 app$run(port = 8000)
