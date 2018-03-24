@@ -1,78 +1,171 @@
 <!DOCTYPE html>
-<html lang="en"><head>
-<meta http-equiv="content-type" content="text/html; charset=UTF-8">
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <meta name="description" content="">
-    <meta name="author" content="Stefan Schmidhuber">
+<html lang="en">
 
-    <!-- here we need a cool icon-->
-    <link rel="icon" href="https://getbootstrap.com/favicon.ico">
+<head>
+  <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta name="description" content="">
+  <meta name="author" content="Stefan Schmidhuber">
 
-    <title>Math Challenge</title>
+  <!-- here we need a cool icon-->
+  <link rel="icon" href="https://getbootstrap.com/favicon.ico">
 
-    <!-- Bootstrap core CSS -->
-    <link href="bootstrap.css" rel="stylesheet">
+  <title>Math Challenge</title>
 
-    <!-- Custom styles for this template -->
-    <link href="starter-template.css" rel="stylesheet">
-  </head>
+  <!-- Bootstrap core CSS -->
+  <link href="bootstrap.css" rel="stylesheet">
 
-  <body>
+  <!-- Custom styles for this template -->
+  <link href="starter-template.css" rel="stylesheet">
+</head>
 
-    <nav class="navbar navbar-expand-md navbar-dark bg-dark fixed-top">
-      <a class="navbar-brand" href="#">Math Challenge</a>
-      <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarsExampleDefault" aria-controls="navbarsExampleDefault" aria-expanded="false" aria-label="Toggle navigation">
-        <span class="navbar-toggler-icon"></span>
-      </button>
+<body>
 
-      <div class="collapse navbar-collapse" id="navbarsExampleDefault">
-        <ul class="navbar-nav mr-auto">
-          <li class="nav-item">
-            <a id="nav-play" class="nav-link active" href="#play">Play</a>
-          </li>
-          <li class="nav-item">
-            <a id="nav-statistics" class="nav-link" href="#statistics">Statistics</a>
-          </li>
-          <li class="nav-item">
-            <a id="nav-about" class="nav-link" href="#about">About</a>
-          </li>
-        </ul>
+  <nav class="navbar navbar-expand-md navbar-dark bg-dark fixed-top">
+    <a class="navbar-brand" href="#">Math Challenge</a>
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarsExampleDefault" aria-controls="navbarsExampleDefault"
+      aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div class="collapse navbar-collapse" id="navbarsExampleDefault">
+      <ul class="navbar-nav mr-auto">
+        <li class="nav-item">
+          <a id="nav-play" class="nav-link active" href="#play">Play</a>
+        </li>
+        <li class="nav-item">
+          <a id="nav-statistics" class="nav-link" href="#statistics">Statistics</a>
+        </li>
+        <li class="nav-item">
+          <a id="nav-about" class="nav-link" href="#about">About</a>
+        </li>
+      </ul>
+    </div>
+    <ul class="navbar-nav mr-auto">
+      <li class="nav-item">
+        <a id="signIn" class="nav-link" href="#signIn">Login / Register</a>
+      </li>
+    </ul>
+  </nav>
+
+  <main role="main" class="container">
+
+    <div id="container-play" class="container-fluid">
+      <div id="view-start" class="d-flex justify-content-center align-middle">
+        <p style="margin-right: 1em; margin-top: 0.5em; margin-bottom: 0.5em">Hit the "Start" button to play a new game...</p>
+        <button id="button-start" type="button" class="btn btn-primary">Start</button>
       </div>
-    </nav>
+    </div>
 
-    <main role="main" class="container">
+    <div id="container-statistics" class="container-fluid">
+      <em>Statistics</em>
+    </div>
 
-      <div id="container-play" class="container-fluid">
-          <div class="d-flex justify-content-center align-middle">
-              <p style="margin-right: 1em; margin-top: 0.5em; margin-bottom: 0.5em">Hit the "Start" button to play a new game...</p>
-              <button id="button-start" type="button" class="btn btn-primary">Start</button>
+    <div id="container-about" class="container-fluid">
+      <p>This is a "just for fun" application to test the abilities of R regarding web development and at the same time evaluating
+        some cloud services.</p>
+      <p>Among others, I used the following libraries/technologies/packages:</p>
+      <div class="icons d-flex justify-content-center">
+        <a href="https://getbootstrap.com/">
+          <img class="icons" src="img/bootstrap-icon.png" alt="Bootstrap: The most popular HTML, CSS, and JS library in the world."
+          />
+        </a>
+        <a href="https://jquery.com/">
+          <img class="icons" src="img/jQuery-icon.gif" alt="jQuery: The Write Less, Do More, JavaScript Library." />
+        </a>
+        <a href="https://www.r-project.org/">
+          <img class="icons" src="img/r-icon.png" alt="The R Project for Statistical Computing" />
+        </a>
+        <a href="https://www.rplumber.io/">
+          <img class="icons" src="img/plumber-icon.png" alt="A flexible and lightweight web server" />
+        </a>
+      </div>
+    </div>
+
+    <div id="container-signin" class="container-fluid">
+      <div id="accordion">
+        <div class="card">
+          <div class="card-header" id="headingOne">
+            <h5 class="mb-0">
+              <button class="btn btn-link" data-toggle="collapse" data-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
+                Login
+              </button>
+            </h5>
           </div>
-      </div>
 
-      <div id="container-statistics" class="container-fluid"><em>Statistics</em></div>
-
-      <div id="container-about" class="container-fluid">
-          <p>This is a "just for fun" application to test the abilities of R regarding web development and at the same time evaluating some cloud services.</p>
-          <p>Among others, I used the following libraries/technologies/packages:</p>
-          <div class="icons d-flex justify-content-center">
-              <a href="https://getbootstrap.com/"><img class="icons" src="img/bootstrap-icon.png" alt="Bootstrap: The most popular HTML, CSS, and JS library in the world."/></a>
-              <a href="https://jquery.com/"><img class="icons" src="img/jQuery-icon.gif" alt="jQuery: The Write Less, Do More, JavaScript Library."/></a>
-              <a href="https://www.r-project.org/"><img class="icons" src="img/r-icon.png" alt="The R Project for Statistical Computing"/></a>
-              <a href="https://www.rplumber.io/"><img class="icons" src="img/plumber-icon.png" alt="A flexible and lightweight web server"/></a>
+          <div id="collapseOne" class="collapse show" aria-labelledby="headingOne" data-parent="#accordion">
+            <div class="card-body">
+              <div class="row">
+                <div class="col"></div>
+                <div class="col-6">
+                  <form>
+                    <div class="form-group">
+                      <label for="name">Player name:</label>
+                      <input type="text" class="form-control" id="name">
+                    </div>
+                    <div class="form-group">
+                      <label for="password">Password:</label>
+                      <input type="password" class="form-control" id="password">
+                    </div>
+                    <button id="button-login" type="submit" class="btn btn-primary">Login</button>
+                  </form>
+                </div>
+                <div class="col"></div>
+              </div>
+            </div>
           </div>
+        </div>
+        <div class="card">
+          <div class="card-header" id="headingTwo">
+            <h5 class="mb-0">
+              <button class="btn btn-link" data-toggle="collapse" data-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
+                Register new player
+              </button>
+            </h5>
+          </div>
+
+          <div id="collapseTwo" class="collapse" aria-labelledby="headingTwo" data-parent="#accordion">
+            <div class="card-body">
+              <div class="row">
+                <div class="col"></div>
+                <div class="col-6">
+                  <form>
+                    <div class="form-group">
+                      <label for="name">Player name:</label>
+                      <input type="text" class="form-control" id="name">
+                    </div>
+                    <div class="form-group">
+                      <label for="country">Country:</label>
+                      <input type="text" class="form-control" id="country">
+                    </div>
+                    <div class="form-group">
+                      <label for="password">Password:</label>
+                      <input type="password" class="form-control" id="password">
+                    </div>
+                    <button id="button-register" type="submit" class="btn btn-primary">Register</button>
+                  </form>
+                </div>
+                <div class="col"></div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
+    </div>
+  </main>
+  <!-- /.container -->
 
-    </main><!-- /.container -->
 
-
-    <!-- Bootstrap core JavaScript
+  <!-- Bootstrap core JavaScript
     ================================================== -->
-    <!-- Placed at the end of the document so the pages load faster -->
-    <script src="jquery-3.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
-    <script>window.jQuery || document.write('<script src="../../../../assets/js/vendor/jquery.min.js"><\/script>')</script>
-    <script src="popper.js"></script>
-    <script src="bootstrap.js"></script>
-    <script src="ui.js"></script>
+  <!-- Placed at the end of the document so the pages load faster -->
+  <script src="jquery-3.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+  <script>window.jQuery || document.write('<script src="../../../../assets/js/vendor/jquery.min.js"><\/script>')</script>
+  <script src="popper.js"></script>
+  <script src="bootstrap.js"></script>
+  <script src="ui.js"></script>
 
-</body></html>
+</body>
+
+</html>

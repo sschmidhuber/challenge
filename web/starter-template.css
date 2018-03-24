@@ -6,7 +6,7 @@ body {
   text-align: center;
 }
 
-#container-statistics, #container-about {
+#container-statistics, #container-about, #container-play, #container-signUp {
     display: none;
 }
 

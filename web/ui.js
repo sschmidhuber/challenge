@@ -1,18 +1,9 @@
 $(document).ready(function(){
-	$("#button-start").focus();
-	var socket = new WebSocket("ws://localhost:8080");
-	
-	socket.onopen = function(){
-	alert("Socket has been opened!");
-	socket.send("Test");
-};
-	
-	socket.onmessage = function(msg){
-	console.log(msg);	//Awesome!
-};
+	var player = null;
 
 	$(".nav-link").click(function(){
-		var item = $(this).text().toLowerCase();
+		var item = $(this).attr("href").substr(1).toLowerCase();
+		//var item = $(this).text().toLowerCase();
 		$(".nav-link").removeClass("active");
 		$(this).addClass("active");
 
@@ -29,5 +20,14 @@ $(document).ready(function(){
 	  var message = {};
 	  message.request = "start_new_game";
 		socket.send(JSON.stringify(message));
+	});
+
+	$("#button-register").click( function() {
+		$.post("/signUp", $("form-register").serialize(),
+		function(data) {
+			console.log(data);			
+		   },
+		   'json'
+		);
 	});
 });
