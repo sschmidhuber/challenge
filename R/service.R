@@ -58,6 +58,21 @@ cleanUpGames <- function() {
   game_list[gameTime > outdated]
 }
 
+#' check input parameter in req$QUERY_STRING and req$postBody
+#' returns true if all parameter are available
+checkInputParameter <- function(req, expected_parameter) {
+  str_detect(paste(req$QUERY_STRING, req$postBody), expected_parameter) %>% all()
+}
+
+#' parse parameters from post body
+#' @return named list with given parameter
+parsePostBody <- function(req) {
+  tmp <- str_split(req$postBody, "&") %>% unlist() %>% str_split("=")
+  parameter <-  sapply(tmp, function(x) {x[2]})
+  names(parameter) <- sapply(tmp, function(x) {x[1]})
+  parameter
+} 
+
 
 ## deliver static content
 
@@ -67,6 +82,7 @@ list()
 
 ## web API
 
+# TODO make sure not to log any passwords
 # log some information about incoming requests
 #* @filter requestLogger
 function(req){
@@ -84,7 +100,17 @@ function(req){
 #* @param country
 #* @param password
 #* @serializer unboxedJSON
-function(res, name, country="unknown", password) {
+function(req, res) {
+  if (!checkInputParameter(req, expected_parameter = c("name", "password"))) {
+    res$status <- 400
+    return(logger(list(error = "missing input parameter")))
+  }
+  
+  parameter <- parsePostBody(req)
+  name <- parameter[["name"]]
+  password <- parameter[["password"]]
+  country <- if ("country" %in% names(parameter)) {parameter[["country"]]} else {"unknown"}
+  
   name <- str_squish(name)
   
   if (str_length(name) < 2 || str_length(password) <= 3) {
@@ -110,7 +136,16 @@ function(res, name, country="unknown", password) {
 #* @param name
 #* @param password
 #* @serializer unboxedJSON
-function(res, name, password) {
+function(req, res) {
+  if (!checkInputParameter(req, expected_parameter = c("name", "password"))) {
+    res$status <- 400
+    return(logger(list(error = "missing input parameter")))
+  }
+  
+  parameter <- parsePostBody(req)
+  name <- parameter[["name"]]
+  password <- parameter[["password"]]
+  
   if (filter(player_table, name == name) %>% nrow() == 0) {
     res$status <- 400
     logger(list(error = "unknown user"))

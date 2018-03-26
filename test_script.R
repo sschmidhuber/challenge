@@ -12,11 +12,11 @@ args <- commandArgs(trailingOnly = TRUE)
 server <- NULL
 tests <- c(executed = 0, failed = 0)
 
-runTest <- function(url, query = "", res_pattern, log_msg = "", method = "GET", return_res = FALSE) {
+runTest <- function(url, body = list(), res_pattern, log_msg = "", method = "GET", return_res = FALSE) {
   if (method == "GET") {
     res <- GET(url = url)
   } else if (method == "POST") {
-    res <- POST(url = url, query = query, encode = "json")
+    res <- POST(url = url, body = body, encode = "form")
   } else {
     stop(paste("method:", method, "not supported"))
   }
@@ -52,61 +52,71 @@ if (length(args) != 0) {
 
 ## Tests ----------------------------------------------------------------------
 
+runTest(log_msg = "try to sign up without any parameter",
+        method = "POST",
+        url = "http://127.0.0.1:8000/signUp",
+        res_pattern = '\\{\\"error\\":\\"missing input parameter\\"\\}')
+
+runTest(log_msg = "try to sign in with one missing parameter",
+        method = "POST",
+        url = "http://127.0.0.1:8000/signIn",
+        body = list(name="alice"),
+        res_pattern = '\\{\\"error\\":\\"missing input parameter\\"\\}')
 
 runTest(log_msg = "try to sign in with unregistered user",
         method = "POST",
         url = "http://127.0.0.1:8000/signIn",
-        query = list(password="password", name="alice"),
+        body = list(password="password", name="alice"),
         res_pattern = '\\{\\"error\\":\\"unknown user\\"\\}')
 
 alice <- runTest(log_msg = "sign up user alice:password",
                  method = "POST",
                  url = "http://127.0.0.1:8000/signUp",
-                 query = list(name="alice", country="Germany", password="password"),
+                 body = list(name="alice", country="Germany", password="password"),
                  res_pattern = '\\{\\"player\\":\\".*\\",\\"name\\":\\"alice\\"\\}',
                  return_res = TRUE)[["player"]]
 
 runTest(log_msg = "try to sign up with too short password",
         method = "POST",
         url = "http://127.0.0.1:8000/signUp",
-        query = list(name="bob", country="Germany", password="pw"),
+        body = list(name="bob", country="Germany", password="pw"),
         res_pattern = '\\{\\"error\\":\\"name or password invalid\\"\\}')
 
 runTest(log_msg = "try to sign up with username already in use",
         method = "POST",
         url = "http://127.0.0.1:8000/signUp",
-        query = list(name="alice", country="Germany", password="12345"),
+        body = list(name="alice", country="Germany", password="12345"),
         res_pattern = '\\{\\"error\\":\\"name already assigned to another player\\"\\}')
 
 runTest(log_msg = "try to sign up with username only differs by upper case letter",
         method = "POST",
         url = "http://127.0.0.1:8000/signUp",
-        query = list(name="Alice", country="Germany", password="12345"),
+        body = list(name="Alice", country="Germany", password="12345"),
         res_pattern = '\\{\\"error\\":\\"name already assigned to another player\\"\\}')
 
 bob <- runTest(log_msg = "sign up Bob:12345, without country parameter",
                method = "POST",
                url = "http://127.0.0.1:8000/signUp",
-               query = list(name="Bob", password="12345"),
+               body = list(name="Bob", password="12345"),
                res_pattern = '\\{\\"player\\":\\".*\\",\\"name\\":\\"Bob\\"\\}',
                return_res = TRUE)[["player"]]
 
 runTest(log_msg = "sign in user Bob:12345",
         method = "POST",
         url = "http://127.0.0.1:8000/signIn",
-        query = list(name="Bob", password="12345"),
+        body = list(name="Bob", password="12345"),
         res_pattern = paste0('\\{\\"player\\":\\"', bob, '\\",\\"name\\":\\"Bob\\"\\}'))
 
 runTest(log_msg = "try to sign in with invalid password",
         method = "POST",
         url = "http://127.0.0.1:8000/signIn",
-        query = list(name="alice", password="12345"),
+        body = list(name="alice", password="12345"),
         res_pattern = '\\{\\"error\\":\\"invalid password\\"\\}')
 
 runTest(log_msg = "sign in user alice:password",
         method = "POST",
         url = "http://127.0.0.1:8000/signIn",
-        query = list(name="alice", password="password"),
+        body = list(name="alice", password="password"),
         res_pattern = paste0('\\{\\"player\\":\\"', alice, '\\",\\"name\\":\\"alice\\"\\}'))
 
 runTest(log_msg = "try to start new game with invalid player ID",
